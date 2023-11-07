@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -83,12 +84,10 @@ func main() {
 	}
 	res.ExecPath = filepath.Dir(ex)
 	
-	fmt.Println(
-		res.Cpu,
-		res.MemoryUsage.Sys,
-		res.MemoryUsage.TotalAlloc,
-		res.MemoryTotal,
-		res.FsUsage,
-		res.ExecPath,
-	)
+	resJson, err := json.Marshal(res)
+	if err != nil {
+		log.Println(err)
+	}
+	
+	fmt.Println(string(resJson))
 }
