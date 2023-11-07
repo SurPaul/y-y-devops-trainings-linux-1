@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 
 	sigar "github.com/cloudfoundry/gosigar"
 )
@@ -13,11 +14,11 @@ import (
 type response struct {
 	Cpu			int
 	MemoryUsage	struct {
-		TotalAlloc	string // TODO: float64
-		Sys			string // TODO: float64
+		TotalAlloc	float64
+		Sys			float64
 	}
-	MemoryTotal	string // TODO: float64
-	FsUsage		string // TODO: float64
+	MemoryTotal	float64
+	FsUsage		float64
 	ExecPath	string
 }
 
@@ -25,8 +26,18 @@ func format(val uint64) float64 {
 	return float64(val) / 1024 / 1024
 }
 
+func roundAndParseFloat(u uint64) (float64, error) {
+	f, err := strconv.ParseFloat(fmt.Sprintf(
+		"%.2f",
+		format(u),
+	), 64)
+
+	return f, err
+}
+
 func main() {
 	res := response{}
+	var err error
 	
 	// TODO: Количество дескрипторов
 
@@ -36,22 +47,34 @@ func main() {
 	// Потребление памяти программой
 	var mStats runtime.MemStats
 	runtime.ReadMemStats(&mStats)
-	res.MemoryUsage.TotalAlloc = fmt.Sprintf("%.2f", format(mStats.TotalAlloc))
-	res.MemoryUsage.Sys = fmt.Sprintf("%.2f", format(mStats.Sys))
+	res.MemoryUsage.TotalAlloc, err = roundAndParseFloat(mStats.TotalAlloc)
+	if err != nil {
+		log.Println(err)
+	}
+	res.MemoryUsage.Sys, err = roundAndParseFloat(mStats.Sys)
+	if err != nil {
+		log.Println(err)
+	}
 	
 	// Общий объём ОЗУ
 	mem := sigar.Mem{}
 	if err := mem.Get(); err != nil {
 		log.Println(err)
 	}
-	res.MemoryTotal = fmt.Sprintf("%.2f", format(mem.Total))
+	res.MemoryTotal, err = roundAndParseFloat(mem.Total)
+	if err != nil {
+		log.Println(err)
+	}
 
 	// Объём корневого раздела
 	fsu := sigar.FileSystemUsage{}
 	if err := fsu.Get("/"); err != nil {
 		log.Println(err)
 	}
-	res.FsUsage = fmt.Sprintf("%.2f", format(fsu.Total))
+	res.FsUsage, err = roundAndParseFloat(fsu.Total)
+	if err != nil {
+		log.Println(err)
+	}
 
 	// Путь до исполняемого файла
 	ex, err := os.Executable()
