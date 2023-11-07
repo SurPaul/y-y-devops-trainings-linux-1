@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strconv"
 
@@ -78,16 +77,15 @@ func main() {
 	}
 
 	// Путь до исполняемого файла
-	ex, err := os.Executable()
+	res.ExecPath, err = os.Executable()
 	if err != nil {
 		log.Println(err)
 	}
-	res.ExecPath = filepath.Dir(ex)
 	
 	resJson, err := json.Marshal(res)
 	if err != nil {
 		log.Println(err)
 	}
-	
+
 	fmt.Println(string(resJson))
 }
